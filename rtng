@@ -1,0 +1,105 @@
+#!/bin/bash
+
+# Using while loop to assign all args
+# s is the source ip address, event.src_ip
+# d is the destination ip address, event.dst_ip
+# S is the signature, event.signature
+# I is the signature ID#, event.sinature_id
+
+while getopts ":s:d:S:I:D:h" opt; do
+
+
+        case $opt in
+
+                s)
+                        src=${OPTARG}
+
+                        ;;
+
+                d)
+
+                        dst=${OPTARG}
+
+                        ;;
+
+                S)
+
+                        sig=${OPTARG}
+
+                        ;;
+
+                I)
+
+                        sigid=${OPTARG}
+
+                        ;;
+
+                D)
+
+                        date=${OPTARG}
+
+                        ;;
+                h)
+
+                        echo "rtng is the Real Time Next Gen script for analysing Real Time IDS events. It takes 4 options -s source ip -d destination ip -S signature contains -I signature id"
+
+                        ;;
+
+                \?)
+
+                        echo "Invalid option: -$OPTARG" >&2
+                        exit 1
+                        ;;
+
+                :)
+
+                        echo "Option -$OPTARG requires an argument. Try a properly formed IP Address, a word from the signatures themselves or a numeric signature ID. You may also run rtng without any options to see some default output." >&2
+                        exit 1
+                        ;;
+        esac
+
+done
+
+if [ "$src" -a -z "$dst" -a -z "$sig" -a -z "$sigid" ]; then
+
+        /usr/bin/sudo /usr/bin/mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "select event.status, event.timestamp as date, event.signature as Results_filtered_on_Source_IP, INET_NTOA(event.src_ip) as src_ip, INET_NTOA(event.dst_ip) as dst_ip, event.signature_id from event ignore index (event_p_key, sid_time) inner join sensor on event.sid=sensor.sid where INET_NTOA(event.src_ip) regexp '(${src})' order by date desc limit 100; "
+
+elif [ "$dst" -a -z "$src" -a -z "$sig" -a -z "$sigid" ]; then
+
+        /usr/bin/sudo /usr/bin/mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "select event.status, event.timestamp as date, event.signature as Results_filtered_on_Destination_IP, INET_NTOA(event.src_ip) as src_ip, INET_NTOA(event.dst_ip) as dst_ip, event.signature_id from event ignore index (event_p_key, sid_time) inner join sensor on event.sid=sensor.sid where INET_NTOA(event.dst_ip) regexp '(${dst})' order by date desc limit 100;"
+
+elif [ "$sig" -a -z "$src" -a -z "$dst" -a -z "$sigid" -a -z "$date" ]; then
+
+        /usr/bin/sudo /usr/bin/mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "select event.status, event.timestamp as date, event.signature as Results_filtered_on_REGEX_of_Signature, INET_NTOA(event.src_ip) as src_ip, INET_NTOA(event.dst_ip) as dst_ip, signature_id from event ignore index (event_p_key, sid_time) inner join sensor on event.sid=sensor.sid where event.signature regexp '(${sig})' and status=0 order by date desc limit 100;"
+
+elif [ "$sigid" -a -z "$src" -a -z "$dst" -a -z "$sig" ]; then
+
+      /usr/bin/sudo /usr/bin/mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "select event.status, event.timestamp as date, event.signature as Results_filtered_on_Source_IP, INET_NTOA(event.src_ip) as src_ip, INET_NTOA(event.dst_ip) as dst_ip, event.signature_id from event ignore index (event_p_key, sid_time) inner join sensor on event.sid=sensor.sid where INET_NTOA(event.src_ip) regexp '(${src})' order by date desc limit 100; "
+
+elif [ "$dst" -a -z "$src" -a -z "$sig" -a -z "$sigid" ]; then
+
+        /usr/bin/sudo /usr/bin/mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "select event.status, event.timestamp as date, event.signature as Results_filtered_on_Destination_IP, INET_NTOA(event.src_ip) as src_ip, INET_NTOA(event.dst_ip) as dst_ip, event.signature_id from event ignore index (event_p_key, sid_time) inner join sensor on event.sid=sensor.sid where INET_NTOA(event.dst_ip) regexp '(${dst})' order by date desc limit 100;"
+
+elif [ "$sig" -a -z "$src" -a -z "$dst" -a -z "$sigid" -a -z "$date" ]; then
+
+        /usr/bin/sudo /usr/bin/mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "select event.status, event.timestamp as date, event.signature as Results_filtered_on_REGEX_of_Signature, INET_NTOA(event.src_ip) as src_ip, INET_NTOA(event.dst_ip) as dst_ip, signature_id from event ignore index (event_p_key, sid_time) inner join sensor on event.sid=sensor.sid where event.signature regexp '(${sig})' and status=0 order by date desc limit 100;"
+
+elif [ "$sigid" -a -z "$src" -a -z "$dst" -a -z "$sig" ]; then
+
+        /usr/bin/sudo /usr/bin/mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "select event.status, event.timestamp as date, event.signature as Results_filtered_on_Signature_ID, INET_NTOA(event.src_ip) as src_ip, INET_NTOA(event.dst_ip) as dst_ip, event.signature_id from event ignore index (event_p_key, sid_time) inner join sensor on event.sid=sensor.sid where signature_id=${sigid} and status=0 order by date desc limit 100;"
+
+elif [ "$src" -a "$dst" -a -z "$sig" -a -z "$sigid" ]; then
+
+        /usr/bin/sudo /usr/bin/mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "select event.status, event.timestamp as date, event.signature as Filtered_by_Source_and_Destination_Address, INET_NTOA(event.src_ip) as src_ip, INET_NTOA(event.dst_ip) as dst_ip from event ignore index (event_p_key, sid_time) inner join sensor on event.sid=sensor.sid where INET_NTOA(event.src_ip) regexp '(${src})' and INET_NTOA(event.dst_ip) regexp '(${dst})' order by date desc limit 100;"
+
+elif [ "$sig" -a "$date" -a "$src" -a -z "$dst" -a -z "$sigid" ]; then
+
+        /usr/bin/sudo /usr/bin/mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "select event.status, event.timestamp as date, event.signature as Filterd_by_keyword_all_statuses, INET_NTOA(event.src_ip) as src_ip, INET_NTOA(event.dst_ip) as dst_ip from event ignore index (event_p_key, sid_time) inner join sensor on event.sid=sensor.sid where event.signature regexp '(${sig})' order by date desc limit 100;"
+#       echo $date
+
+else
+
+        /usr/bin/sudo /usr/bin/mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "select status, event.timestamp as date, event.signature as Default_query_with_no_filters, INET_NTOA(event.src_ip) as src_ip, INET_NTOA(event.dst_ip) as dst_ip, event.signature_id from event ignore index (event_p_key, sid_time) inner join sensor on event.sid=sensor.sid where status=0 group by event.signature_id order by date desc limit 100;"
+
+fi
+
